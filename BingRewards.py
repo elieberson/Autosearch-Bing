@@ -36,50 +36,48 @@ def getWordsFromSite(count):
         resWords.append(' '.join(words[start:start+wordsNum]))
     return resWords
 
-#Gets browser points#
-def getBrowserPoints(users,words,sleep=3,mobile=False):
-    if len(words) == 0 or len(users) == 0:
-        return 0
+#Open chrome, go to site and login
+def getBrowser(unText,pwText,mobile=False):
     site = 'https://login.live.com'
     if mobile:
         mobile_emulation = { "deviceName": "Google Nexus 5" }
         chrome_options = webdriver.ChromeOptions()
         chrome_options.add_experimental_option("mobileEmulation", mobile_emulation)
-    for unText,pwText in users:
-        if mobile:
-            driver = webdriver.Chrome(desired_capabilities=chrome_options.to_capabilities())
-        else:
-            driver = webdriver.Chrome()
-        #driver.set_window_size(60,60)
-        driver.set_window_size(300,300)
-        driver.get(site)
-        unElem = driver.find_element_by_name('loginfmt')
-        unElem.send_keys(unText)
-        pwElem = driver.find_element_by_name('passwd')
-        pwElem.send_keys(pwText)
-        si = driver.find_element_by_name('SI')
-        si.send_keys(Keys.RETURN)
-        if driver.current_url[:len(site)] == site:
-            print 'Username: <' + unText + '> did not work! Skipping.'
-            break
+        driver = webdriver.Chrome(desired_capabilities=chrome_options.to_capabilities())
+    else:
+        driver = webdriver.Chrome()
+    driver.set_window_size(300,300)
+    driver.get(site)
+    unElem = driver.find_element_by_name('loginfmt')
+    unElem.send_keys(unText)
+    pwElem = driver.find_element_by_name('passwd')
+    pwElem.send_keys(pwText)
+    si = driver.find_element_by_name('SI')
+    si.send_keys(Keys.RETURN)
+    if driver.current_url[:len(site)] == site:
+        return None
+    return driver
 
-        count = 1
-        driver.get('http://www.bing.com')
-        for word in words:
-            print str(count) + ': Searching: "' + word + '"'
-            search = driver.find_element_by_xpath('//*[@id="sb_form_q"]')
-            search.send_keys(Keys.CONTROL+'a')
-            search.send_keys(Keys.BACKSPACE)
-            search.send_keys(word)
-            search.send_keys(Keys.ENTER)
-            time.sleep(3+random.random()*3)
-            count += 1
-        driver.close()
-        return count-1
+#Gets points on bing
+def getPoints(driver,words,sleep=(3,3)):
+    count = 1
+    driver.get('http://www.bing.com')
+    for word in words:
+        print '    ' + str(count) + ': Searching: "' + word + '"'
+        search = driver.find_element_by_xpath('//*[@id="sb_form_q"]')
+        search.send_keys(Keys.CONTROL+'a')
+        search.send_keys(Keys.BACKSPACE)
+        search.send_keys(word)
+        search.send_keys(Keys.ENTER)
+        time.sleep(sleep[0]+random.random()*sleep[1])
+        count += 1
+    driver.close()
+    return count-1
 
 if __name__== "__main__":
     run = True
     if len(sys.argv) < 2:
+        #check is already ran today
         with open('LastTime.txt','r') as f:
             laststr = f.readline().strip('\n')
             if laststr != '':
@@ -87,24 +85,44 @@ if __name__== "__main__":
                 last = datetime.datetime.strptime(laststr,'%Y-%m-%d')
                 now = datetime.datetime(now.year,now.month,now.day)
                 run = now > last
+    #run seaches
     if run:
         browserSearches = 31
         mobileSearches = 21
+
+        #read arguments if provided
         if len(sys.argv) > 1:
             div = sys.argv[1].find(',')
             browserSearches = int(sys.argv[1][:div])
             mobileSearches = int(sys.argv[1][div+1:])
         users = getUsers('logins.txt')
-        words = getWordsFromSite(browserSearches+mobileSearches)
-        bcount = getBrowserPoints(users,words[:browserSearches])
-        mcount = getBrowserPoints(users,words[browserSearches:],mobile=True)
-        with open('LastTime.txt','w') as f:
-            now = datetime.datetime.now()
-            f.write(now.strftime('%Y-%m-%d'))
-        if browserSearches - bcount != 0:
-            print 'Failed to search ' + str(bcount) + ' regular searches'
-        if mobileSearches - mcount != 0:
-            print 'Failed to search ' + str(mcount) + ' mobile searches'
+
+        for unText,pwText in users:
+            #regular searches
+            print "  Regular Searches:"
+            driver = getBrowser(unText,pwText)
+            if driver is None:
+                print 'Failed to login with "' + unText + '"'
+                continue
+            print 'Username: ' + unText
+            words = getWordsFromSite(browserSearches+mobileSearches)
+            bcount = getPoints(driver,words[:browserSearches])
+
+            #Mobile searches
+            print "  Mobile Searches:"
+            driver = getBrowser(unText,pwText,True)
+            mcount = getPoints(driver,words[browserSearches:])
+
+            #Save last time run
+            with open('LastTime.txt','w') as f:
+                now = datetime.datetime.now()
+                f.write(now.strftime('%Y-%m-%d'))
+
+            #Print failed attempts
+            if browserSearches - bcount != 0:
+                print '  Failed to search ' + str(bcount) + ' regular searches'
+            if mobileSearches - mcount != 0:
+                print '  Failed to search ' + str(mcount) + ' mobile searches'
         print 'Done!'
     else:
-        print 'Already dont for today. Done!'
+        print 'Already dont for today.'
