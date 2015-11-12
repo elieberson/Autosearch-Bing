@@ -25,4 +25,5 @@ Bing Rewards will reward a user 1 point for every 2 searches done through bing. 
 2. If it has not been run on this day, go to the nytimes site and pull strings of word length 2 to 5 from the the summaries on the frontpage. Get enough strings to fulfill all the required searches
 3. Open the chrome browser and login using the credentials in the "logins.txt"
 4. Go to bing.com and run all the searches in regular browser mode
-5. Go to bing.com and run all the searches in mobile browser mode
+5. Clicks on the simple extra rewards on the bings rewards page
+6. Go to bing.com and run all the searches in mobile browser mode

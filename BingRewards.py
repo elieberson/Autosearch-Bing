@@ -58,10 +58,15 @@ def getBrowser(unText,pwText,mobile=False):
         return None
     return driver
 
-#Gets points on bing
-def getPoints(driver,words,sleep=(3,3)):
+#Sleeps for random amount of time
+def sleeper(sleep=(3,3)):
+    time.sleep(sleep[0]+random.random()*sleep[1])
+
+#Gets points on bing search
+def getSearchPoints(driver,words,sleep=(3,3)):
     count = 1
     driver.get('http://www.bing.com')
+    time.sleep(1)
     for word in words:
         print '    ' + str(count) + ': Searching: "' + word + '"'
         search = driver.find_element_by_xpath('//*[@id="sb_form_q"]')
@@ -69,10 +74,29 @@ def getPoints(driver,words,sleep=(3,3)):
         search.send_keys(Keys.BACKSPACE)
         search.send_keys(word)
         search.send_keys(Keys.ENTER)
-        time.sleep(sleep[0]+random.random()*sleep[1])
+        sleeper(sleep)
         count += 1
-    driver.close()
     return count-1
+
+
+#Get points on bing by clicking the extra links
+def getClickPoints(driver,sleep=(3,3)):
+    site = 'https://www.bing.com/rewards/dashboard'
+    while True:
+        driver.get(site)
+        time.sleep(2)
+        if driver.find_element_by_xpath('/html/body/div[2]/div[1]').text != 'You are not signed in to Bing Rewards.':
+            break
+    explores = driver.find_elements_by_xpath('//*[@id="dashboard_wrapper"]/*[@class="offers"]/div[1]//a')
+    for explore in explores:
+        if 'trivia' not in explore.find_element_by_class_name('title').text.lower() and '0' in explore.find_element_by_class_name('progress').text:
+            explore.send_keys(Keys.CONTROL+Keys.ENTER)
+            sleeper(sleep)
+            if driver.current_url == site:
+                driver.find_element_by_tag_name('body').send_keys(Keys.COMMAND + 'r')
+                continue
+            driver.find_element_by_tag_name('body').send_keys(Keys.COMMAND + keys.TAB)
+            driver.find_element_by_tag_name('body').send_keys(Keys.COMMAND + 'w')
 
 if __name__== "__main__":
     run = True
@@ -106,12 +130,17 @@ if __name__== "__main__":
                 continue
             print 'Username: ' + unText
             words = getWordsFromSite(browserSearches+mobileSearches)
-            bcount = getPoints(driver,words[:browserSearches])
+            bcount = getSearchPoints(driver,words[:browserSearches])
+
+            #click for extra points
+            getClickPoints(driver)
+            driver.close()
 
             #Mobile searches
             print "  Mobile Searches:"
             driver = getBrowser(unText,pwText,True)
-            mcount = getPoints(driver,words[browserSearches:])
+            mcount = getSearchPoints(driver,words[browserSearches:])
+            driver.close()
 
             #Save last time run
             with open('LastTime.txt','w') as f:
