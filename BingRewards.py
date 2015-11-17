@@ -27,11 +27,16 @@ def getWordsFromSite(count):
     from lxml import html
     import requests
     page = requests.get('https://www.nytimes.com')
-    summs = html.fromstring(page.text).xpath('//*[@id="top-news"]//*[@class="summary"]')
+    summsTemp = html.fromstring(page.text).xpath('//*[@id="top-news"]//*[@class="summary"]')
+    summs = []
+    for s in summsTemp:
+        if s.text is None or s.text.strip() == "":
+            continue
+        summs.append(s)
     resWords = []
     for i in range(0,count):
         words = summs[random.randint(0,len(summs)-1)].text.encode('ascii','ignore').split()
-        wordsNum = random.randint(2,min(5,len(words)))
+        wordsNum = random.randint(min(2,len(words)),min(5,len(words)))
         start = random.randint(0,len(words)-wordsNum)
         resWords.append(' '.join(words[start:start+wordsNum]))
     return resWords
@@ -78,25 +83,29 @@ def getSearchPoints(driver,words,sleep=(3,3)):
         count += 1
     return count-1
 
-
 #Get points on bing by clicking the extra links
 def getClickPoints(driver,sleep=(3,3)):
     site = 'https://www.bing.com/rewards/dashboard'
     while True:
-        driver.get(site)
-        time.sleep(2)
-        if driver.find_element_by_xpath('/html/body/div[2]/div[1]').text != 'You are not signed in to Bing Rewards.':
+        while True:
+            driver.get(site)
+            time.sleep(2)
+            if driver.find_element_by_xpath('/html/body/div[2]/div[1]').text != 'You are not signed in to Bing Rewards.':
+                break
+        explores = driver.find_elements_by_xpath('//*[@id="dashboard_wrapper"]/*[@class="offers"]/div[1]//a')
+
+        count = 0
+        for explore in explores:
+            if 'trivia' not in explore.find_element_by_class_name('title').text.lower() and '0' in explore.find_element_by_class_name('progress').text:
+                explore.send_keys(Keys.ENTER)
+                if driver.current_url != site:
+                    driver.find_element_by_tag_name('body').send_keys(Keys.COMMAND + 'w')
+                sleeper(sleep)
+                break
+            else:
+                count += 1
+        if count == len(explores):
             break
-    explores = driver.find_elements_by_xpath('//*[@id="dashboard_wrapper"]/*[@class="offers"]/div[1]//a')
-    for explore in explores:
-        if 'trivia' not in explore.find_element_by_class_name('title').text.lower() and '0' in explore.find_element_by_class_name('progress').text:
-            explore.send_keys(Keys.CONTROL+Keys.ENTER)
-            sleeper(sleep)
-            if driver.current_url == site:
-                driver.find_element_by_tag_name('body').send_keys(Keys.COMMAND + 'r')
-                continue
-            driver.find_element_by_tag_name('body').send_keys(Keys.COMMAND + keys.TAB)
-            driver.find_element_by_tag_name('body').send_keys(Keys.COMMAND + 'w')
 
 if __name__== "__main__":
     run = True
