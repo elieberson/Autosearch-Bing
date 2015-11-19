@@ -1,5 +1,5 @@
 # Autosearch-Bing
-Automatically log in and search Bing with random strings taken from NYTimes (Regular and Mobile modes)
+Automatically log in and search Bing with random strings taken from NYTimes (Regular and Mobile modes). Also clicks on the links on the Bings rewards page for extra points (experimental).
 
 ## Purpose
 Bing Rewards will reward a user 1 point for every 2 searches done through bing. A maximum of 15 regular points can be rewarded per day. However, there is a separate maximum of 10 points for mobile searches. This program will automatically find strings from the summaries on the front page of nytimes.com and search them on bing, both reglarly and via mobile by changing the chrome browser to mobile mode.
@@ -16,8 +16,10 @@ Bing Rewards will reward a user 1 point for every 2 searches done through bing. 
 3. In terminal/cmd:
   - `BingRewards.py`
     - By default, 31 regular searches and 21 movile searches
-  - `BingRewards.py <#RegularSearches>,<#MobileSeaches>`
-    - Number of regular and mobile searches specificed
+  - `BingRewards.py <#RegularSearches>,<#MobileSeaches>,<#ClickPints>`
+    - <#RegularSearches> Number of regular to perform
+    - <#MobileSearches> Number of mobile to perform
+    - <#ClickPoints> Whether or not click links n rewards page. 0=False,1=True
     - This will ignore the "LastTime.txt"
 
 ## What it does
